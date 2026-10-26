@@ -1,612 +1,1039 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Local Notes App</title>
-
+    <title>Minimal Command-Driven Notes App</title>
+    <!-- Include Marked.js CDN for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-
-        :root {
-
-            --bg-color: #f4f6f9;
-
-            --sidebar-bg: #ffffff;
-
-            --text-color: #333333;
-
-            --accent-color: #4a90e2;
-
-            --border-color: #e1e4e8;
-
-            --delete-color: #e74c3c;
-
-        }
-
-
-        * {
-
-            box-sizing: border-box;
-
-            margin: 0;
-
-            padding: 0;
-
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-
-        }
-
-
         body {
-
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
             display: flex;
-
             height: 100vh;
-
-            background-color: var(--bg-color);
-
-            color: var(--text-color);
-
+            background-color: #f9f9f9;
+            color: #333;
+            overflow: hidden;
         }
-
-
-        /* Sidebar Styling */
-
         .sidebar {
-
-            width: 300px;
-
-            background-color: var(--sidebar-bg);
-
-            border-right: 1px solid var(--border-color);
-
+            width: 260px;
+            min-width: 260px;
+            background: #fff;
+            border-right: 1px solid #ddd;
             display: flex;
-
             flex-direction: column;
-
+            transition: width 0.2s ease, min-width 0.2s ease;
+            overflow: hidden;
+            white-space: nowrap;
         }
-
-
+        .sidebar.collapsed {
+            width: 0;
+            min-width: 0;
+            border-right: none;
+        }
         .sidebar-header {
-
-            padding: 20px;
-
-            border-bottom: 1px solid var(--border-color);
-
-            display: flex;
-
-            justify-content: space-between;
-
-            align-items: center;
-
-        }
-
-
-        .btn {
-
-            padding: 8px 14px;
-
-            border: none;
-
-            border-radius: 6px;
-
-            cursor: pointer;
-
-            font-weight: 600;
-
-            transition: background 0.2s;
-
-        }
-
-
-        .btn-main {
-
-            background-color: var(--accent-color);
-
-            color: white;
-
-        }
-
-
-        .btn-main:hover {
-
-            background-color: #357abd;
-
-        }
-
-
-        .notes-list {
-
-            flex: 1;
-
-            overflow-y: auto;
-
-            padding: 10px;
-
-        }
-
-
-        .note-item {
-
             padding: 15px;
-
-            background: var(--bg-color);
-
-            border-radius: 6px;
-
-            margin-bottom: 10px;
-
-            cursor: pointer;
-
-            position: relative;
-
-            transition: transform 0.1s;
-
-        }
-
-
-        .note-item:hover {
-
-            transform: translateY(-2px);
-
-        }
-
-
-        .note-item.active {
-
-            border-left: 4px solid var(--accent-color);
-
-            background: #eef5fc;
-
-        }
-
-
-        .note-item h4 {
-
-            font-size: 14px;
-
-            margin-bottom: 5px;
-
-            white-space: nowrap;
-
-            overflow: hidden;
-
-            text-overflow: ellipsis;
-
-        }
-
-
-        .note-item p {
-
-            font-size: 12px;
-
-            color: #666;
-
-            white-space: nowrap;
-
-            overflow: hidden;
-
-            text-overflow: ellipsis;
-
-        }
-
-
-        .delete-btn {
-
-            position: absolute;
-
-            right: 10px;
-
-            top: 15px;
-
-            background: none;
-
-            border: none;
-
-            color: var(--delete-color);
-
-            cursor: pointer;
-
             font-weight: bold;
-
-            display: none;
-
-        }
-
-
-        .note-item:hover .delete-btn {
-
-            display: block;
-
-        }
-
-
-        /* Editor Area */
-
-        .editor-container {
-
-            flex: 1;
-
+            border-bottom: 1px solid #ddd;
             display: flex;
-
-            flex-direction: column;
-
-            padding: 30px;
-
-            background-color: #ffffff;
-
-        }
-
-
-        .editor-header {
-
-            margin-bottom: 20px;
-
-            display: flex;
-
-            gap: 15px;
-
-        }
-
-
-        .note-title-input {
-
-            flex: 1;
-
-            font-size: 24px;
-
-            font-weight: 700;
-
-            border: none;
-
-            outline: none;
-
-            border-bottom: 2px solid transparent;
-
-        }
-
-
-        .note-title-input:focus {
-
-            border-bottom-color: var(--border-color);
-
-        }
-
-
-        .note-textarea {
-
-            flex: 1;
-
-            font-size: 16px;
-
-            line-height: 1.6;
-
-            border: none;
-
-            outline: none;
-
-            resize: none;
-
-            color: #444;
-
-        }
-
-
-        .placeholder-text {
-
-            display: flex;
-
+            justify-content: space-between;
             align-items: center;
-
-            justify-content: center;
-
-            flex: 1;
-
-            color: #999;
-
-            font-style: italic;
-
+            font-size: 14px;
+            color: #555;
         }
-
+        .search-container {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .search-input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+            box-sizing: border-box;
+            outline: none;
+        }
+        .search-input:focus {
+            border-color: #007bff;
+        }
+        .note-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .note-list-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid transparent;
+        }
+        .note-list-item:hover {
+            background-color: #f1f1f1;
+        }
+        .note-list-item.active-item {
+            background-color: #e2e8f0;
+            font-weight: 500;
+        }
+        .note-list-item span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+        .note-list-item mark {
+            background-color: #fff3cd;
+            color: inherit;
+            padding: 0;
+            border-radius: 2px;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-width: 0;
+        }
+        /* Tab Bar Layout with Scroll Arrows */
+        .tabs-bar-wrapper {
+            display: flex;
+            background: #eef2f5;
+            border-bottom: 1px solid #ddd;
+            height: 40px;
+            min-height: 40px;
+            align-items: center;
+        }
+        .scroll-btn {
+            background: #eef2f5;
+            border: none;
+            border-right: 1px solid #ddd;
+            width: 32px;
+            height: 100%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 14px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .scroll-btn:hover {
+            background: #e2e8f0;
+            color: #333;
+        }
+        .tabs-container {
+            display: flex;
+            background: #eef2f5;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            height: 100%;
+            flex: 1;
+            scroll-behavior: smooth;
+            white-space: nowrap;
+        }
+        .tab {
+            padding: 0;
+            background: #eef2f5;
+            border-right: 1px solid #ddd;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            user-select: none;
+            max-width: 180px;
+            min-width: 110px;
+            height: 100%;
+            flex-shrink: 0;
+            border-top: 5px solid transparent;
+            transition: background 0.2s;
+        }
+        .tab.active {
+            background: #fff;
+            border-bottom: 2px solid #fff;
+            font-weight: 500;
+        }
+        .tab > span {
+            padding: 0 10px 0 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+        .tab button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #888;
+            padding: 0 10px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .tab button:hover {
+            color: #ff4d4d;
+            background: rgba(0,0,0,0.05);
+        }
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 12px;
+            min-height: 0;
+        }
+        .editor-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .shortcuts-hint {
+            font-size: 11px;
+            color: #666;
+        }
+        .title-input {
+            font-size: 20px;
+            font-weight: bold;
+            border: none;
+            border-bottom: 1px solid #ddd;
+            padding: 5px 0;
+            outline: none;
+            background: transparent;
+            width: 100%;
+            flex-shrink: 0;
+        }
+        .title-input:focus {
+            border-bottom-color: #007bff;
+        }
+        textarea, .markdown-preview {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            font-size: 15px;
+            outline: none;
+            font-family: inherit;
+            background: #fff;
+            box-sizing: border-box;
+            overflow-y: auto;
+            min-height: 0;
+        }
+        textarea {
+            resize: none;
+        }
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #666;
+            gap: 15px;
+            user-select: none;
+        }
+        .ascii-art {
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.2;
+            white-space: pre;
+            color: #444;
+        }
+        /* Vim Command Bar Wrapper */
+        .vim-command-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            display: flex;
+            flex-direction: column;
+            padding: 6px 15px;
+            font-family: monospace;
+            font-size: 14px;
+            border-top: 1px solid #333;
+            z-index: 100;
+        }
+        .vim-input-row {
+            display: flex;
+            align-items: center;
+        }
+        .vim-command-bar input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            outline: none;
+            font-family: monospace;
+            font-size: 14px;
+            flex: 1;
+            margin-left: 4px;
+        }
+        .vim-suggestions {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+            min-height: 16px;
+        }
+        /* Custom Modal Overlay */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        .modal-content {
+            background: #fff;
+            border-radius: 6px;
+            width: 450px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .modal-header {
+            padding: 15px 20px;
+            font-weight: bold;
+            font-size: 16px;
+            border-bottom: 1px solid #eee;
+            background: #fdfdfd;
+        }
+        .modal-body {
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #444;
+        }
+        .modal-body code {
+            font-family: monospace;
+            background: #f1f1f1;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .modal-footer {
+            padding: 12px 20px;
+            background: #f9f9f9;
+            border-top: 1px solid #eee;
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+        }
+        .hidden {
+            display: none !important;
+        }
     </style>
-
 </head>
-
 <body>
 
-
-    <!-- Sidebar -->
-
-    <div class="sidebar">
-
+    <!-- Sidebar Listing All Notes -->
+    <div id="sidebar" class="sidebar">
         <div class="sidebar-header">
-
-            <h3>My Notes</h3>
-
-            <button class="btn btn-main" id="add-note-btn">+ New</button>
-
+            <span>NOTES (Ctrl+Space)</span>
         </div>
-
-        <div class="notes-list" id="notes-list">
-
-            <!-- Dynamic notes injected here -->
-
+        
+        <!-- Search Filter Input -->
+        <div class="search-container">
+            <input type="text" id="search-input" class="search-input" placeholder="Filter notes..." oninput="handleSearch(event)">
         </div>
-
-        <div style="padding: 15px; border-top: 1px solid var(--border-color);">
-
-            <button class="btn" id="export-btn" style="width: 100%; background: #eee;">Export Backup (.json)</button>
-
-        </div>
-
+        
+        <ul id="note-list" class="note-list"></ul>
     </div>
 
+    <!-- Main Workspace -->
+    <div class="main-content">
+        <!-- Persistent Tabs Bar with Scroll Buttons -->
+        <div class="tabs-bar-wrapper">
+            <button class="scroll-btn" onclick="scrollTabs(-150)" title="Scroll Left">&#9664;</button>
+            <div id="tabs-container" class="tabs-container"></div>
+            <button class="scroll-btn" onclick="scrollTabs(150)" title="Scroll Right" style="border-right: none; border-left: 1px solid #ddd;">&#9654;</button>
+        </div>
+        
+        <!-- Hidden file input for import command -->
+        <input type="file" id="import-file" class="hidden" accept=".json" onchange="importNotes(event)">
 
-    <!-- Main Editor -->
-
-    <div class="editor-container" id="editor-container" style="display: none;">
-
-        <div class="editor-header">
-
-            <input type="text" class="note-title-input" id="note-title" placeholder="Untitled Note">
-
+        <!-- Editor Area (Visible when active note exists) -->
+        <div id="editor-workspace" class="editor-container">
+            <input type="text" id="note-title-input" class="title-input" placeholder="Note Title...">
+            
+            <div class="editor-toolbar">
+                <span class="shortcuts-hint">Press <b>Ctrl+Space</b> to open Vim command bar</span>
+            </div>
+            
+            <textarea id="note-editor" placeholder="Type Markdown content here..."></textarea>
+            <div id="markdown-preview" class="markdown-preview hidden"></div>
         </div>
 
-        <textarea class="note-textarea" id="note-body" placeholder="Start typing your thoughts..."></textarea>
+        <!-- Empty State Placeholder (Visible when no active tab) -->
+        <div id="empty-state" class="empty-state hidden">
+            <div class="ascii-art">
+        __
+      /  \
+     / _  \       ___
+    | (_)  |    / _ \
+    |  _  /    | (_) |
+    |_| |_|     \___/
+         \       /
+          \_____/   \___/
+          /     \  /     \
+         |   _   ||   _   |
+         |  |_|  ||  |_|  |
+          \_____/  \_____/
+            | |      | |
+            | |      | |
+            |_|      |_|
+            </div>
+            <p>No note selected. Press <b>Ctrl+Space</b> and type <code>:new</code> to create one.</p>
+        </div>
 
+        <!-- Vim Command Bar Overlay -->
+        <div id="vim-command-bar" class="vim-command-bar hidden">
+            <div class="vim-input-row">
+                <span>:</span>
+                <input type="text" id="vim-input" autocomplete="off" spellcheck="false" oninput="handleVimInput(event)">
+            </div>
+            <div id="vim-suggestions" class="vim-suggestions"></div>
+        </div>
+
+        <!-- Custom Modal Dialog Overlay -->
+        <div id="custom-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div id="modal-title" class="modal-header">Help</div>
+                <div id="modal-body" class="modal-body"></div>
+                <div class="modal-footer">Press <b>Esc</b> or <b>Enter</b> to close</div>
+            </div>
+        </div>
     </div>
-
-
-    <!-- Placeholder when no note is selected -->
-
-    <div class="placeholder-text" id="placeholder-text">
-
-        Select a note or create a new one to get started.
-
-    </div>
-
 
     <script>
+        const NOTE_COLORS = ['#e03131', '#2f9e44', '#1971c2', '#f08c00', '#9c36b5', '#0ca678', '#c2255c'];
 
-        // DOM Elements
+        const DOCKER_ADJECTIVES = [
+            'brave', 'clever', 'cosmic', 'swift', 'epic', 'focused', 'zen', 
+            'nimble', 'stellar', 'bold', 'curious', 'vibrant', 'quantum', 'serene'
+        ];
+        const DOCKER_NOUNS = [
+            'turing', 'lovelace', 'hopper', 'tesla', 'curie', 'newton', 'babbage', 
+            'ritchie', 'hamilton', 'wozniak', 'knuth', 'torvalds', 'bohr', 'einstein'
+        ];
 
-        const notesList = document.getElementById('notes-list');
+        const AVAILABLE_COMMANDS = ['new', 'open', 'rename', 'delete', 'preview', 'export', 'import', 'write', 'sidebar', 'help'];
 
-        const addNoteBtn = document.getElementById('add-note-btn');
+        let state = {
+            notes: [
+                { id: '1', title: 'brave-turing', content: '## Pure Command-Driven Flow!\n\n- All shortcut key clutter removed.\n- Use `Ctrl+Space` for your command palette (`:new`, `:open`, `:rename`, `:q`, etc.).', color: '#1971c2' }
+            ],
+            openTabIds: ['1'],
+            activeTabId: '1',
+            searchQuery: '',
+            isPreviewMode: false,
+            isSidebarCollapsed: false
+        };
 
-        const exportBtn = document.getElementById('export-btn');
+        let openTabCycleIndex = 0;
+        let selectedOpenCandidate = null;
 
-        const editorContainer = document.getElementById('editor-container');
-
-        const placeholderText = document.getElementById('placeholder-text');
-
-        const noteTitleInput = document.getElementById('note-title');
-
-        const noteBodyInput = document.getElementById('note-body');
-
-
-        // Application State
-
-        let notes = JSON.parse(localStorage.getItem('local-notes')) || [];
-
-        let activeNoteId = null;
-
-
-        // Functions
-
-        function saveToLocalStorage() {
-
-            localStorage.setItem('local-notes', JSON.stringify(notes));
-
+        function scrollTabs(offset) {
+            const container = document.getElementById('tabs-container');
+            container.scrollBy({ left: offset, behavior: 'smooth' });
         }
 
+        function toggleSidebar() {
+            state.isSidebarCollapsed = !state.isSidebarCollapsed;
+            const sidebarEl = document.getElementById('sidebar');
+            if (state.isSidebarCollapsed) {
+                sidebarEl.classList.add('collapsed');
+            } else {
+                sidebarEl.classList.remove('collapsed');
+            }
+            saveState();
+        }
 
-        function renderNotesList() {
+        function renameActiveNote(newTitle) {
+            const activeNote = state.notes.find(n => n.id === state.activeTabId);
+            if (!activeNote || !newTitle) return;
 
-            notesList.innerHTML = '';
+            const trimmed = newTitle.trim();
+            if (!trimmed) return;
 
+            const isDuplicate = state.notes.some(n => n.id !== activeNote.id && n.title.toLowerCase() === trimmed.toLowerCase());
+            if (isDuplicate) {
+                showModal("Error", `A note with the title <code>${escapeHtml(trimmed)}</code> already exists.`);
+                return;
+            }
+
+            activeNote.title = trimmed;
+            saveState();
+            render();
+        }
+
+        function showModal(title, htmlContent) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').innerHTML = htmlContent;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function generateUniqueDockerName() {
+            let candidate;
+            let attempts = 0;
+            do {
+                const adj = DOCKER_ADJECTIVES[Math.floor(Math.random() * DOCKER_ADJECTIVES.length)];
+                const noun = DOCKER_NOUNS[Math.floor(Math.random() * DOCKER_NOUNS.length)];
+                candidate = `${adj}-${noun}`;
+                if (attempts > 5) {
+                    candidate += `-${Math.floor(Math.random() * 900 + 100)}`;
+                }
+                attempts++;
+            } while (state.notes.some(n => n.title.toLowerCase() === candidate.toLowerCase()));
+            return candidate;
+        }
+
+        function getRandomColor() {
+            return NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)];
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('app_state');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    state.notes = (parsed.notes || state.notes).map(n => ({
+                        ...n,
+                        color: n.color || getRandomColor()
+                    }));
+                    state.openTabIds = parsed.openTabIds || state.openTabIds;
+                    state.activeTabId = parsed.activeTabId || state.activeTabId;
+                    state.isSidebarCollapsed = parsed.isSidebarCollapsed || false;
+                } catch (e) {
+                    console.error('Error parsing storage', e);
+                }
+            }
             
+            const sidebarEl = document.getElementById('sidebar');
+            if (state.isSidebarCollapsed) {
+                sidebarEl.classList.add('collapsed');
+            } else {
+                sidebarEl.classList.remove('collapsed');
+            }
+        }
 
-            // Sort by last modified date (newest first)
+        function saveState() {
+            localStorage.setItem('app_state', JSON.stringify({
+                notes: state.notes,
+                openTabIds: state.openTabIds,
+                activeTabId: state.activeTabId,
+                isSidebarCollapsed: state.isSidebarCollapsed
+            }));
+        }
 
-            notes.sort((a, b) => b.updatedAt - a.updatedAt);
+        function render() {
+            const noteListEl = document.getElementById('note-list');
+            const tabsContainerEl = document.getElementById('tabs-container');
+            const editorWorkspaceEl = document.getElementById('editor-workspace');
+            const emptyStateEl = document.getElementById('empty-state');
+            const titleInputEl = document.getElementById('note-title-input');
+            const editorEl = document.getElementById('note-editor');
+            const previewEl = document.getElementById('markdown-preview');
 
-
-            notes.forEach(note => {
-
-                const noteItem = document.createElement('div');
-
-                noteItem.classList.add('note-item');
-
-                if (note.id === activeNoteId) noteItem.classList.add('active');
-
-                
-
-                noteItem.innerHTML = `
-
-                    <h4>${note.title.trim() || 'Untitled Note'}</h4>
-
-                    <p>${note.body.trim() || 'No additional content...'}</p>
-
-                    <button class="delete-btn" data-id="${note.id}">&times;</button>
-
-                `;
-
-
-                // Select note on click
-
-                noteItem.addEventListener('click', (e) => {
-
-                    if (e.target.classList.contains('delete-btn')) return;
-
-                    selectNote(note.id);
-
-                });
-
-
-                // Delete note button
-
-                noteItem.querySelector('.delete-btn').addEventListener('click', (e) => {
-
-                    e.stopPropagation();
-
-                    deleteNote(note.id);
-
-                });
-
-
-                notesList.appendChild(noteItem);
-
+            // Render Sidebar with Search Filter & Highlighting
+            noteListEl.innerHTML = '';
+            const query = state.searchQuery.trim().toLowerCase();
+            
+            const filteredNotes = state.notes.filter(note => {
+                return note.title.toLowerCase().includes(query) || note.content.toLowerCase().includes(query);
             });
 
+            if (filteredNotes.length === 0) {
+                const emptyLi = document.createElement('li');
+                emptyLi.className = 'note-list-item';
+                emptyLi.style.color = '#888';
+                emptyLi.textContent = 'No matching notes';
+                noteListEl.appendChild(emptyLi);
+            } else {
+                filteredNotes.forEach(note => {
+                    const li = document.createElement('li');
+                    li.className = `note-list-item ${note.id === state.activeTabId ? 'active-item' : ''}`;
+                    li.style.borderLeftColor = note.color || '#ccc';
+                    
+                    const titleText = note.title || 'Untitled Note';
+                    const highlightedTitle = highlightMatch(titleText, query);
+
+                    li.innerHTML = `
+                        <span onclick="openNote('${note.id}')">${highlightedTitle}</span>
+                        <button class="delete-item-btn" onclick="deleteNoteById(event, '${note.id}')" title="Close/Delete">&times;</button>
+                    `;
+                    noteListEl.appendChild(li);
+                });
+            }
+
+            // Render Tabs
+            tabsContainerEl.innerHTML = '';
+            let activeTabElement = null;
+
+            state.openTabIds.forEach(id => {
+                const note = state.notes.find(n => n.id === id);
+                if (!note) return;
+
+                const tab = document.createElement('div');
+                tab.className = `tab ${id === state.activeTabId ? 'active' : ''}`;
+                tab.style.borderTopColor = note.color || '#ccc';
+                tab.onclick = () => switchTab(id);
+
+                tab.innerHTML = `
+                    <span>${escapeHtml(note.title || 'Untitled Note')}</span>
+                    <button onclick="closeTab(event, '${id}')">&times;</button>
+                `;
+                tabsContainerEl.appendChild(tab);
+
+                if (id === state.activeTabId) {
+                    activeTabElement = tab;
+                }
+            });
+
+            // Automatically scroll active tab into view
+            if (activeTabElement) {
+                activeTabElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+
+            // Toggle Workspace vs Empty State based on activeTabId
+            const activeNote = state.notes.find(n => n.id === state.activeTabId);
+            if (activeNote) {
+                editorWorkspaceEl.classList.remove('hidden');
+                emptyStateEl.classList.add('hidden');
+
+                if (document.activeElement !== titleInputEl) {
+                    titleInputEl.value = activeNote.title;
+                }
+                titleInputEl.style.color = 'inherit';
+
+                if (state.isPreviewMode) {
+                    editorEl.classList.add('hidden');
+                    previewEl.classList.remove('hidden');
+                    previewEl.innerHTML = marked.parse(activeNote.content);
+                } else {
+                    editorEl.classList.remove('hidden');
+                    previewEl.classList.add('hidden');
+                    editorEl.value = activeNote.content;
+                }
+            } else {
+                editorWorkspaceEl.classList.add('hidden');
+                emptyStateEl.classList.remove('hidden');
+            }
         }
 
+        function highlightMatch(text, query) {
+            const safeText = escapeHtml(text);
+            if (!query) return safeText;
 
-        function createNewNote() {
+            const escapedQuery = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const regex = new RegExp(`(${escapedQuery})`, 'gi');
+            return safeText.replace(regex, '<mark>$1</mark>');
+        }
 
-            const newNote = {
+        function handleSearch(e) {
+            state.searchQuery = e.target.value;
+            render();
+        }
 
-                id: Date.now().toString(),
+        function togglePreview() {
+            state.isPreviewMode = !state.isPreviewMode;
+            render();
+        }
 
-                title: '',
+        function createNewNote(customTitle = null) {
+            let finalTitle = customTitle ? customTitle.trim() : generateUniqueDockerName();
+            
+            if (customTitle) {
+                let baseTitle = finalTitle;
+                let counter = 1;
+                while (state.notes.some(n => n.title.toLowerCase() === finalTitle.toLowerCase())) {
+                    finalTitle = `${baseTitle}-${counter}`;
+                    counter++;
+                }
+            }
 
-                body: '',
-
-                updatedAt: Date.now()
-
+            const newId = Date.now().toString();
+            const newNote = { 
+                id: newId, 
+                title: finalTitle, 
+                content: '', 
+                color: getRandomColor() 
             };
-
-            notes.unshift(newNote);
-
-            saveToLocalStorage();
-
-            selectNote(newNote.id);
-
+            state.notes.push(newNote);
+            state.openTabIds.push(newId);
+            state.activeTabId = newId;
+            state.isPreviewMode = false;
+            saveState();
+            render();
+            
+            const titleInput = document.getElementById('note-title-input');
+            titleInput.focus();
+            titleInput.setSelectionRange(titleInput.value.length, titleInput.value.length);
         }
 
+        function openNoteByName(query) {
+            const match = state.notes.find(n => n.title.toLowerCase() === query.toLowerCase()) ||
+                          state.notes.find(n => n.title.toLowerCase().includes(query.toLowerCase()));
+            if (match) {
+                openNote(match.id);
+            } else {
+                showModal("Notice", `No note found matching: <code>${escapeHtml(query)}</code>`);
+            }
+        }
 
-        function selectNote(id) {
+        function openNote(id) {
+            if (!state.openTabIds.includes(id)) {
+                state.openTabIds.push(id);
+            }
+            state.activeTabId = id;
+            saveState();
+            render();
+        }
 
-            activeNoteId = id;
+        function switchTab(id) {
+            state.activeTabId = id;
+            saveState();
+            render();
+        }
 
-            const note = notes.find(n => n.id === id);
+        function closeTab(event, id) {
+            if (event) event.stopPropagation();
+            state.openTabIds = state.openTabIds.filter(tabId => tabId !== id);
 
-            
-
-            if (note) {
-
-                noteTitleInput.value = note.title;
-
-                noteBodyInput.value = note.body;
-
-                
-
-                placeholderText.style.display = 'none';
-
-                editorContainer.style.display = 'flex';
-
+            if (state.activeTabId === id) {
+                state.activeTabId = state.openTabIds.length > 0 ? state.openTabIds[state.openTabIds.length - 1] : null;
             }
 
-            renderNotesList();
-
+            saveState();
+            render();
         }
 
+        function deleteActiveNote() {
+            if (!state.activeTabId) return;
+            deleteNoteById(null, state.activeTabId);
+        }
 
-        function updateActiveNote() {
+        function deleteNoteById(event, id) {
+            if (event) event.stopPropagation();
 
-            if (!activeNoteId) return;
+            state.notes = state.notes.filter(n => n.id !== id);
+            state.openTabIds = state.openTabIds.filter(tabId => tabId !== id);
 
-            
-
-            const note = notes.find(n => n.id === activeNoteId);
-
-            if (note) {
-
-                note.title = noteTitleInput.value;
-
-                note.body = noteBodyInput.value;
-
-                note.updatedAt = Date.now();
-
-                
-
-                saveToLocalStorage();
-
-                // Re-render list items without stripping editor focus
-
-                const items = document.querySelectorAll('.note-item');
-
-                renderNotesList();
-
+            if (state.activeTabId === id) {
+                state.activeTabId = state.openTabIds.length > 0 ? state.openTabIds[state.openTabIds.length - 1] : null;
             }
 
+            saveState();
+            render();
         }
-
-
-        function deleteNote(id) {
-
-            notes = notes.filter(n => n.id !== id);
-
-            saveToLocalStorage();
-
-            
-
-            if (activeNoteId === id) {
-
-                activeNoteId = null;
-
-                editorContainer.style.display = 'none';
-
-                placeholderText.style.display = 'flex';
-
-            }
-
-            renderNotesList();
-
-        }
-
 
         function exportNotes() {
-
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(notes, null, 2));
-
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+                notes: state.notes,
+                openTabIds: state.openTabIds,
+                activeTabId: state.activeTabId,
+                isSidebarCollapsed: state.isSidebarCollapsed
+            }, null, 2));
             const downloadAnchor = document.createElement('a');
-
             downloadAnchor.setAttribute("href", dataStr);
-
-            downloadAnchor.setAttribute("download", "my_notes_backup.json");
-
+            downloadAnchor.setAttribute("download", `notes_backup_${new Date().toISOString().slice(0, 10)}.json`);
             document.body.appendChild(downloadAnchor);
-
             downloadAnchor.click();
-
             downloadAnchor.remove();
-
         }
 
+        function triggerImport() {
+            document.getElementById('import-file').click();
+        }
 
-        // Event Listeners
+        function importNotes(event) {
+            const fileReader = new FileReader();
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0], "UTF-8");
+                fileReader.onload = (e) => {
+                    try {
+                        const imported = JSON.parse(e.target.result);
+                        if (imported.notes && Array.isArray(imported.notes)) {
+                            state.notes = imported.notes.map(n => ({ ...n, color: n.color || getRandomColor() }));
+                            state.openTabIds = imported.openTabIds || [];
+                            state.activeTabId = imported.activeTabId || (state.openTabIds.length ? state.openTabIds[0] : null);
+                            state.isSidebarCollapsed = imported.isSidebarCollapsed || false;
+                            saveState();
+                            loadState();
+                            render();
+                            showModal("Success", "Notes imported successfully!");
+                        } else {
+                            showModal("Error", "Invalid backup file format.");
+                        }
+                    } catch (error) {
+                        showModal("Error", "Failed to parse JSON file.");
+                        console.error(error);
+                    }
+                };
+            }
+        }
 
-        addNoteBtn.addEventListener('click', createNewNote);
+        function handleTitleInput(e) {
+            const activeNote = state.notes.find(n => n.id === state.activeTabId);
+            if (!activeNote) return;
 
-        noteTitleInput.addEventListener('input', updateActiveNote);
+            let newTitle = e.target.value.trim();
+            if (!newTitle) return;
 
-        noteBodyInput.addEventListener('input', updateActiveNote);
+            const isDuplicate = state.notes.some(n => n.id !== activeNote.id && n.title.toLowerCase() === newTitle.toLowerCase());
+            if (isDuplicate) {
+                e.target.style.color = '#dc3545';
+                return;
+            } else {
+                e.target.style.color = 'inherit';
+            }
 
-        exportBtn.addEventListener('click', exportNotes);
+            activeNote.title = newTitle;
+            saveState();
+            render();
+        }
 
+        function handleEditorInput(e) {
+            const activeNote = state.notes.find(n => n.id === state.activeTabId);
+            if (!activeNote) return;
 
-        // Initial Load
+            activeNote.content = e.target.value;
+            saveState();
+        }
 
-        renderNotesList();
+        function escapeHtml(str) {
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag] || tag));
+        }
 
+        // Vim Auto-completion & Note Search Helper
+        function handleVimInput(e) {
+            const val = e.target.value.trim();
+            const parts = val.split(' ');
+            const cmd = parts[0].toLowerCase();
+            const arg = parts.slice(1).join(' ');
+            const suggestionsEl = document.getElementById('vim-suggestions');
+
+            if (cmd === 'open' || cmd === 'o') {
+                const query = arg.toLowerCase();
+                const matchingNotes = state.notes.filter(n => n.title.toLowerCase().includes(query));
+                if (matchingNotes.length === 0) {
+                    selectedOpenCandidate = null;
+                    suggestionsEl.textContent = 'No matching notes found';
+                } else {
+                    const currentSelected = matchingNotes[openTabCycleIndex % matchingNotes.length];
+                    selectedOpenCandidate = currentSelected.title;
+                    suggestionsEl.innerHTML = `Match: <b>${escapeHtml(selectedOpenCandidate)}</b> (${(openTabCycleIndex % matchingNotes.length) + 1}/${matchingNotes.length}) — Press Tab to cycle`;
+                }
+                return;
+            }
+
+            selectedOpenCandidate = null;
+            if (!val) {
+                suggestionsEl.textContent = 'Commands: new, open, rename, delete, preview, export, import, write, sidebar, help';
+                return;
+            }
+
+            const matches = AVAILABLE_COMMANDS.filter(c => c.startsWith(val));
+            if (matches.length > 0) {
+                suggestionsEl.textContent = `Suggestions: ${matches.join(', ')} (Press Tab to complete)`;
+            } else {
+                suggestionsEl.textContent = 'No matching commands';
+            }
+        }
+
+        // Vim Command Parser
+        function executeVimCommand(cmdStr) {
+            const parts = cmdStr.trim().split(' ');
+            const cmd = parts[0].toLowerCase();
+            const arg = parts.slice(1).join(' ');
+
+            let targetArg = (cmd === 'open' || cmd === 'o') && selectedOpenCandidate ? selectedOpenCandidate : arg;
+
+            switch (cmd) {
+                case 'new':
+                case 'n':
+                case 'e':
+                case 'enew':
+                    createNewNote(targetArg ? targetArg : null);
+                    break;
+                case 'open':
+                case 'o':
+                    if (targetArg) {
+                        openNoteByName(targetArg);
+                    } else {
+                        showModal("Error", "Usage: <code>:open &lt;note title&gt;</code>");
+                    }
+                    break;
+                case 'rename':
+                case 'rn':
+                    if (arg) {
+                        renameActiveNote(arg);
+                    } else {
+                        showModal("Error", "Usage: <code>:rename &lt;new title&gt;</code>");
+                    }
+                    break;
+                case 'q':
+                case 'bd':
+                case 'close':
+                    if (state.activeTabId) {
+                        closeTab(null, state.activeTabId);
+                    }
+                    break;
+                case 'delete':
+                case 'd':
+                case 'del':
+                    deleteActiveNote();
+                    break;
+                case 'preview':
+                case 'p':
+                    togglePreview();
+                    break;
+                case 'sidebar':
+                case 'sb':
+                    toggleSidebar();
+                    break;
+                case 'export':
+                    exportNotes();
+                    break;
+                case 'import':
+                    triggerImport();
+                    break;
+                case 'write':
+                case 'w':
+                    saveState();
+                    break;
+                case 'help':
+                case '?':
+                    showModal("Vim Command Reference", `
+                        <ul style="margin: 0; padding-left: 20px;">
+                            <li><code>:new / :n [title]</code> — Create a new note</li>
+                            <li><code>:open / :o &lt;title&gt;</code> — Open an existing note (Tab cycles matches)</li>
+                            <li><code>:rename / :rn &lt;title&gt;</code> — Rename active note</li>
+                            <li><code>:q / :close</code> — Close current tab</li>
+                            <li><code>:delete / :d</code> — Delete active note</li>
+                            <li><code>:preview / :p</code> — Toggle Markdown preview</li>
+                            <li><code>:sidebar / :sb</code> — Toggle collapsible sidebar</li>
+                            <li><code>:export</code> — Export backup JSON</li>
+                            <li><code>:import</code> — Import backup JSON</li>
+                            <li><code>:write / :w</code> — Force save state</li>
+                            <li><code>:help or :?</code> — Show this help modal</li>
+                        </ul>
+                    `);
+                    break;
+                default:
+                    showModal("Unknown Command", `Not an editor command: <code>${escapeHtml(cmd)}</code>. Type <code>:help</code> for available commands.`);
+            }
+        }
+
+        // Global Event Listener (Only Ctrl+Space triggers Vim bar)
+        window.addEventListener('keydown', (e) => {
+            const vimBar = document.getElementById('vim-command-bar');
+            const vimInput = document.getElementById('vim-input');
+            const modal = document.getElementById('custom-modal');
+
+            // If Modal is open
+            if (!modal.classList.contains('hidden')) {
+                if (e.key === 'Escape' || e.key === 'Enter') {
+                    e.preventDefault();
+                    closeModal();
+                }
+                return;
+            }
+
+            // If Vim bar is open
+            if (!vimBar.classList.contains('hidden')) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    vimBar.classList.add('hidden');
+                    vimInput.value = '';
+                    openTabCycleIndex = 0;
+                    selectedOpenCandidate = null;
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const cmd = vimInput.value;
+                    vimBar.classList.add('hidden');
+                    vimInput.value = '';
+                    const savedCandidate = selectedOpenCandidate;
+                    openTabCycleIndex = 0;
+                    selectedOpenCandidate = null;
+                    
+                    if (cmd.trim().toLowerCase().startsWith('open ') || cmd.trim().toLowerCase().startsWith('o ')) {
+                        if (savedCandidate) {
+                            openNoteByName(savedCandidate);
+                        } else {
+                            executeVimCommand(cmd);
+                        }
+                    } else {
+                        executeVimCommand(cmd);
+                    }
+                } else if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const val = vimInput.value.trim();
+                    const parts = val.split(' ');
+                    const cmd = parts[0].toLowerCase();
+                    const arg = parts.slice(1).join(' ');
+
+                    if (cmd === 'open' || cmd === 'o') {
+                        const matchingNotes = state.notes.filter(n => n.title.toLowerCase().includes(arg.toLowerCase()));
+                        if (matchingNotes.length > 0) {
+                            openTabCycleIndex++;
+                            handleVimInput({ target: vimInput });
+                        }
+                    } else {
+                        const match = AVAILABLE_COMMANDS.find(c => c.startsWith(cmd));
+                        if (match) {
+                            parts[0] = match;
+                            vimInput.value = parts.join(' ');
+                            handleVimInput({ target: vimInput });
+                        }
+                    }
+                }
+                return;
+            }
+
+            // Trigger Vim command bar globally via Ctrl + Space
+            if (e.ctrlKey && e.code === 'Space') {
+                e.preventDefault();
+                openTabCycleIndex = 0;
+                selectedOpenCandidate = null;
+                vimBar.classList.remove('hidden');
+                document.getElementById('vim-suggestions').textContent = 'Commands: new, open, rename, delete, preview, export, import, write, sidebar, help';
+                vimInput.focus();
+                return;
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            render();
+            document.getElementById('note-title-input').addEventListener('input', handleTitleInput);
+            document.getElementById('note-editor').addEventListener('input', handleEditorInput);
+        });
     </script>
-
 </body>
-
 </html>
