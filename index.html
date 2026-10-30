@@ -813,6 +813,9 @@
             if (!activeNote) return;
 
             activeNote.content = e.target.value;
+            activeNote.selectionStart = e.target.selectionStart;
+            activeNote.selectionEnd = e.target.selectionEnd;
+
             saveState();
         }
 
@@ -820,6 +823,33 @@
             return str.replace(/[&<>'"]/g, tag => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
             }[tag] || tag));
+        }
+
+        function saveCursorPosition() {
+            const editor = document.getElementById('note-editor');
+
+            if (!editor || editor.classList.contains('hidden')) return;
+
+            const note = state.notes.find(n => n.id === state.activeTabId);
+            if (!note) return;
+
+            note.selectionStart = editor.selectionStart;
+            note.selectionEnd = editor.selectionEnd;
+
+            saveState();
+        }
+
+        function restoreCursorPosition() {
+            const editor = document.getElementById('note-editor');
+            const note = state.notes.find(n => n.id === state.activeTabId);
+
+            if (!editor || editor.classList.contains('hidden') || !note) return;
+
+            const start = Math.min(note.selectionStart ?? 0, editor.value.length);
+            const end = Math.min(note.selectionEnd ?? start, editor.value.length);
+
+            editor.focus();
+            editor.setSelectionRange(start, end);
         }
 
         // Vim Command Parser
@@ -922,8 +952,11 @@
             if (!vimBar.classList.contains('hidden')) {
                 if (e.key === 'Escape') {
                     e.preventDefault();
+
                     vimBar.classList.add('hidden');
                     vimInput.value = '';
+
+                    restoreCursorPosition();
                 } else if (e.key === 'Enter') {
                     e.preventDefault();
 
@@ -953,6 +986,9 @@
             // Trigger Vim command bar globally via Ctrl + Space
             if (e.ctrlKey && e.code === 'Space') {
                 e.preventDefault();
+
+                saveCursorPosition();
+
                 vimBar.classList.remove('hidden');
                 vimInput.focus();
                 return;
@@ -962,8 +998,16 @@
         window.addEventListener('DOMContentLoaded', () => {
             loadState();
             render();
+
             document.getElementById('note-title-input').addEventListener('input', handleTitleInput);
-            document.getElementById('note-editor').addEventListener('input', handleEditorInput);
+
+            const editor = document.getElementById('note-editor');
+
+            editor.addEventListener('input', handleEditorInput);
+            editor.addEventListener('keyup', saveCursorPosition);
+            editor.addEventListener('mouseup', saveCursorPosition);
+
+            restoreCursorPosition();
         });
     </script>
 </body>
