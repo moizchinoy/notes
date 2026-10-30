@@ -282,12 +282,6 @@
             flex: 1;
             margin-left: 4px;
         }
-        .vim-suggestions {
-            font-size: 12px;
-            color: #888;
-            margin-top: 4px;
-            min-height: 16px;
-        }
         /* Custom Modal Overlay */
         .modal-overlay {
             position: absolute;
@@ -411,7 +405,6 @@
                 <span>:</span>
                 <input type="text" id="vim-input" autocomplete="off" spellcheck="false" oninput="handleVimInput(event)">
             </div>
-            <div id="vim-suggestions" class="vim-suggestions"></div>
         </div>
 
         <!-- Custom Modal Dialog Overlay -->
@@ -436,7 +429,11 @@
             'ritchie', 'hamilton', 'wozniak', 'knuth', 'torvalds', 'bohr', 'einstein'
         ];
 
-        const AVAILABLE_COMMANDS = ['new', 'open', 'rename', 'delete', 'preview', 'export', 'import', 'write', 'sidebar', 'help'];
+        const AVAILABLE_COMMANDS = [
+            'new', 'open', 'rename', 'close',
+            'delete', 'preview', 'sidebar',
+            'export', 'import', 'write', 'help'
+        ];
 
         let state = {
             notes: [
@@ -830,40 +827,31 @@
             }[tag] || tag));
         }
 
-        // Vim Auto-completion & Note Search Helper
         function handleVimInput(e) {
             const val = e.target.value.trim();
             const parts = val.split(' ');
             const cmd = parts[0].toLowerCase();
             const arg = parts.slice(1).join(' ');
-            const suggestionsEl = document.getElementById('vim-suggestions');
 
             if (cmd === 'open' || cmd === 'o') {
                 const query = arg.toLowerCase();
-                const matchingNotes = state.notes.filter(n => n.title.toLowerCase().includes(query));
+                const matchingNotes = state.notes.filter(n =>
+                    n.title.toLowerCase().includes(query)
+                );
+
                 if (matchingNotes.length === 0) {
                     selectedOpenCandidate = null;
-                    suggestionsEl.textContent = 'No matching notes found';
                 } else {
-                    const currentSelected = matchingNotes[openTabCycleIndex % matchingNotes.length];
+                    const currentSelected =
+                        matchingNotes[openTabCycleIndex % matchingNotes.length];
+
                     selectedOpenCandidate = currentSelected.title;
-                    suggestionsEl.innerHTML = `Match: <b>${escapeHtml(selectedOpenCandidate)}</b> (${(openTabCycleIndex % matchingNotes.length) + 1}/${matchingNotes.length}) — Press Tab to cycle`;
                 }
+
                 return;
             }
 
             selectedOpenCandidate = null;
-            if (!val) {
-                suggestionsEl.textContent = 'Commands: new, open, rename, delete, preview, export, import, write, sidebar, help';
-                return;
-            }
-
-            const matches = AVAILABLE_COMMANDS.filter(c => c.startsWith(val));
-            if (matches.length > 0) {
-                suggestionsEl.textContent = `Suggestions: ${matches.join(', ')} (Press Tab to complete)`;
-            } else {
-                suggestionsEl.textContent = 'No matching commands';
-            }
         }
 
         // Vim Command Parser
@@ -872,81 +860,78 @@
             const cmd = parts[0].toLowerCase();
             const arg = parts.slice(1).join(' ');
 
-            let targetArg = (cmd === 'open' || cmd === 'o') && selectedOpenCandidate ? selectedOpenCandidate : arg;
-
             switch (cmd) {
                 case 'new':
-                case 'n':
-                case 'e':
-                case 'enew':
-                    createNewNote(targetArg ? targetArg : null);
+                    createNewNote(arg || null);
                     break;
+
                 case 'open':
-                case 'o':
-                    if (targetArg) {
-                        openNoteByName(targetArg);
+                    if (arg) {
+                        openNoteByName(arg);
                     } else {
                         showModal("Error", "Usage: <code>:open &lt;note title&gt;</code>");
                     }
                     break;
+
                 case 'rename':
-                case 'rn':
                     if (arg) {
                         renameActiveNote(arg);
                     } else {
                         showModal("Error", "Usage: <code>:rename &lt;new title&gt;</code>");
                     }
                     break;
-                case 'q':
-                case 'bd':
+
                 case 'close':
                     if (state.activeTabId) {
                         closeTab(null, state.activeTabId);
                     }
                     break;
+
                 case 'delete':
-                case 'd':
-                case 'del':
                     deleteActiveNote();
                     break;
+
                 case 'preview':
-                case 'p':
                     togglePreview();
                     break;
+
                 case 'sidebar':
-                case 'sb':
                     toggleSidebar();
                     break;
+
                 case 'export':
                     exportNotes();
                     break;
+
                 case 'import':
                     triggerImport();
                     break;
+
                 case 'write':
-                case 'w':
                     saveState();
                     break;
+
                 case 'help':
-                case '?':
-                    showModal("Vim Command Reference", `
-                        <ul style="margin: 0; padding-left: 20px;">
-                            <li><code>:new / :n [title]</code> — Create a new note</li>
-                            <li><code>:open / :o &lt;title&gt;</code> — Open an existing note (Tab cycles matches)</li>
-                            <li><code>:rename / :rn &lt;title&gt;</code> — Rename active note</li>
-                            <li><code>:q / :close</code> — Close current tab</li>
-                            <li><code>:delete / :d</code> — Delete active note</li>
-                            <li><code>:preview / :p</code> — Toggle Markdown preview</li>
-                            <li><code>:sidebar / :sb</code> — Toggle collapsible sidebar</li>
-                            <li><code>:export</code> — Export backup JSON</li>
-                            <li><code>:import</code> — Import backup JSON</li>
-                            <li><code>:write / :w</code> — Force save state</li>
-                            <li><code>:help or :?</code> — Show this help modal</li>
+                    showModal("Command Reference", `
+                        <ul>
+                            <li><code>:new [title]</code> — Create a note</li>
+                            <li><code>:open &lt;title&gt;</code> — Open a note</li>
+                            <li><code>:rename &lt;title&gt;</code> — Rename a note</li>
+                            <li><code>:close</code> — Close current tab</li>
+                            <li><code>:delete</code> — Delete active note</li>
+                            <li><code>:preview</code> — Toggle Markdown preview</li>
+                            <li><code>:sidebar</code> — Toggle sidebar</li>
+                            <li><code>:export</code> — Export notes</li>
+                            <li><code>:import</code> — Import notes</li>
+                            <li><code>:write</code> — Save notes</li>
+                            <li><code>:help</code> — Show help</li>
                         </ul>
                     `);
                     break;
+
                 default:
-                    showModal("Unknown Command", `Not an editor command: <code>${escapeHtml(cmd)}</code>. Type <code>:help</code> for available commands.`);
+                    showModal("Unknown Command",
+                        `Not an editor command: <code>${escapeHtml(cmd)}</code>. Type <code>:help</code> for available commands.`);
             }
         }
 
@@ -975,42 +960,28 @@
                     selectedOpenCandidate = null;
                 } else if (e.key === 'Enter') {
                     e.preventDefault();
+
                     const cmd = vimInput.value;
+
                     vimBar.classList.add('hidden');
                     vimInput.value = '';
-                    const savedCandidate = selectedOpenCandidate;
+
                     openTabCycleIndex = 0;
                     selectedOpenCandidate = null;
-                    
-                    if (cmd.trim().toLowerCase().startsWith('open ') || cmd.trim().toLowerCase().startsWith('o ')) {
-                        if (savedCandidate) {
-                            openNoteByName(savedCandidate);
-                        } else {
-                            executeVimCommand(cmd);
-                        }
-                    } else {
-                        executeVimCommand(cmd);
-                    }
+
+                    executeVimCommand(cmd);
                 } else if (e.key === 'Tab') {
                     e.preventDefault();
+
                     const val = vimInput.value.trim();
                     const parts = val.split(' ');
                     const cmd = parts[0].toLowerCase();
-                    const arg = parts.slice(1).join(' ');
 
-                    if (cmd === 'open' || cmd === 'o') {
-                        const matchingNotes = state.notes.filter(n => n.title.toLowerCase().includes(arg.toLowerCase()));
-                        if (matchingNotes.length > 0) {
-                            openTabCycleIndex++;
-                            handleVimInput({ target: vimInput });
-                        }
-                    } else {
-                        const match = AVAILABLE_COMMANDS.find(c => c.startsWith(cmd));
-                        if (match) {
-                            parts[0] = match;
-                            vimInput.value = parts.join(' ');
-                            handleVimInput({ target: vimInput });
-                        }
+                    const match = AVAILABLE_COMMANDS.find(c => c.startsWith(cmd));
+
+                    if (match) {
+                        parts[0] = match;
+                        vimInput.value = parts.join(' ');
                     }
                 }
                 return;
@@ -1022,7 +993,6 @@
                 openTabCycleIndex = 0;
                 selectedOpenCandidate = null;
                 vimBar.classList.remove('hidden');
-                document.getElementById('vim-suggestions').textContent = 'Commands: new, open, rename, delete, preview, export, import, write, sidebar, help';
                 vimInput.focus();
                 return;
             }
