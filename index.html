@@ -133,8 +133,7 @@
         .tabs-container {
             display: flex;
             background: #eef2f5;
-            overflow-x: hidden;
-            overflow-y: hidden;
+            overflow: hidden;
             height: 100%;
             flex: 1;
             scroll-behavior: smooth;
@@ -285,10 +284,7 @@
         /* Custom Modal Overlay */
         .modal-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            inset: 0;
             background: rgba(0, 0, 0, 0.4);
             display: flex;
             justify-content: center;
@@ -303,7 +299,6 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
         .modal-header {
             padding: 15px 20px;
@@ -403,7 +398,7 @@
         <div id="vim-command-bar" class="vim-command-bar hidden">
             <div class="vim-input-row">
                 <span>:</span>
-                <input type="text" id="vim-input" autocomplete="off" spellcheck="false" oninput="handleVimInput(event)">
+                <input type="text" id="vim-input" autocomplete="off" spellcheck="false">
             </div>
         </div>
 
@@ -445,9 +440,6 @@
             isPreviewMode: false,
             isSidebarCollapsed: false
         };
-
-        let openTabCycleIndex = 0;
-        let selectedOpenCandidate = null;
 
         function scrollTabs(offset) {
             const container = document.getElementById('tabs-container');
@@ -827,33 +819,6 @@
             }[tag] || tag));
         }
 
-        function handleVimInput(e) {
-            const val = e.target.value.trim();
-            const parts = val.split(' ');
-            const cmd = parts[0].toLowerCase();
-            const arg = parts.slice(1).join(' ');
-
-            if (cmd === 'open' || cmd === 'o') {
-                const query = arg.toLowerCase();
-                const matchingNotes = state.notes.filter(n =>
-                    n.title.toLowerCase().includes(query)
-                );
-
-                if (matchingNotes.length === 0) {
-                    selectedOpenCandidate = null;
-                } else {
-                    const currentSelected =
-                        matchingNotes[openTabCycleIndex % matchingNotes.length];
-
-                    selectedOpenCandidate = currentSelected.title;
-                }
-
-                return;
-            }
-
-            selectedOpenCandidate = null;
-        }
-
         // Vim Command Parser
         function executeVimCommand(cmdStr) {
             const parts = cmdStr.trim().split(' ');
@@ -956,8 +921,6 @@
                     e.preventDefault();
                     vimBar.classList.add('hidden');
                     vimInput.value = '';
-                    openTabCycleIndex = 0;
-                    selectedOpenCandidate = null;
                 } else if (e.key === 'Enter') {
                     e.preventDefault();
 
@@ -965,9 +928,6 @@
 
                     vimBar.classList.add('hidden');
                     vimInput.value = '';
-
-                    openTabCycleIndex = 0;
-                    selectedOpenCandidate = null;
 
                     executeVimCommand(cmd);
                 } else if (e.key === 'Tab') {
@@ -990,8 +950,6 @@
             // Trigger Vim command bar globally via Ctrl + Space
             if (e.ctrlKey && e.code === 'Space') {
                 e.preventDefault();
-                openTabCycleIndex = 0;
-                selectedOpenCandidate = null;
                 vimBar.classList.remove('hidden');
                 vimInput.focus();
                 return;
