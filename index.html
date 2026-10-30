@@ -527,13 +527,17 @@
             }
         }
 
-        function saveState() {
-            localStorage.setItem('app_state', JSON.stringify({
+        function getStateSnapshot() {
+            return {
                 notes: state.notes,
                 openTabIds: state.openTabIds,
                 activeTabId: state.activeTabId,
                 isSidebarCollapsed: state.isSidebarCollapsed
-            }));
+            };
+        }
+
+        function saveState() {
+            localStorage.setItem('app_state', JSON.stringify(getStateSnapshot()));
         }
 
         function render() {
@@ -706,13 +710,19 @@
             render();
         }
 
+        function updateActiveTabAfterRemoval(id) {
+            if (state.activeTabId === id) {
+                state.activeTabId =
+                    state.openTabIds.at(-1) || null;
+            }
+        }
+
         function closeTab(event, id) {
             if (event) event.stopPropagation();
+
             state.openTabIds = state.openTabIds.filter(tabId => tabId !== id);
 
-            if (state.activeTabId === id) {
-                state.activeTabId = state.openTabIds.length > 0 ? state.openTabIds[state.openTabIds.length - 1] : null;
-            }
+            updateActiveTabAfterRemoval(id);
 
             saveState();
             render();
@@ -729,21 +739,15 @@
             state.notes = state.notes.filter(n => n.id !== id);
             state.openTabIds = state.openTabIds.filter(tabId => tabId !== id);
 
-            if (state.activeTabId === id) {
-                state.activeTabId = state.openTabIds.length > 0 ? state.openTabIds[state.openTabIds.length - 1] : null;
-            }
+            updateActiveTabAfterRemoval(id);
 
             saveState();
             render();
         }
 
         function exportNotes() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
-                notes: state.notes,
-                openTabIds: state.openTabIds,
-                activeTabId: state.activeTabId,
-                isSidebarCollapsed: state.isSidebarCollapsed
-            }, null, 2));
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(
+                JSON.stringify(getStateSnapshot(), null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
             downloadAnchor.setAttribute("download", `notes_backup_${new Date().toISOString().slice(0, 10)}.json`);
