@@ -448,12 +448,10 @@
 
         function toggleSidebar() {
             state.isSidebarCollapsed = !state.isSidebarCollapsed;
-            const sidebarEl = document.getElementById('sidebar');
-            if (state.isSidebarCollapsed) {
-                sidebarEl.classList.add('collapsed');
-            } else {
-                sidebarEl.classList.remove('collapsed');
-            }
+
+            document.getElementById('sidebar')
+                .classList.toggle('collapsed', state.isSidebarCollapsed);
+
             saveState();
         }
 
@@ -514,7 +512,7 @@
                         color: n.color || getRandomColor()
                     }));
                     state.openTabIds = parsed.openTabIds || state.openTabIds;
-                    state.activeTabId = parsed.activeTabId || state.activeTabId;
+                    state.activeTabId = parsed.activeTabId || null;
                     state.isSidebarCollapsed = parsed.isSidebarCollapsed || false;
                 } catch (e) {
                     console.error('Error parsing storage', e);
